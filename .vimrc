@@ -2,7 +2,9 @@
 " Basic
 "-------------------------------------------------------------------------------
 set nocompatible
+set nobackup
 set noswapfile
+set autoread
 let loaded_matchparen=1
 syntax on
 set number
@@ -10,6 +12,7 @@ set showmatch
 set nowritebackup
 set backspace=indent,eol,start
 set tabstop=4
+set expandtab
 set shiftwidth=4
 set pastetoggle=<C-f>
 set autoindent
@@ -21,7 +24,7 @@ set formatoptions=q
 set laststatus=2
 set ruler
 set statusline=%<%f\ %m%r%h%w%{'['.(&fenc!=''?&fenc:&enc).']['.&ff.']'}%=%l,%c%V%8P
-
+set listchars=tab:>-,trail:.
 
 "-------------------------------------------------------------------------------
 " Search
@@ -43,10 +46,49 @@ inoremap " ""<Left>
 inoremap ' ''<Left>
 inoremap ` ``<Left>
 
-nnoremap ; :
-nnoremap : ;
-vnoremap ; :
-vnoremap : ;
+" leader key の変更
+let mapleader=","
+set timeout timeoutlen=1500
+
+" ================ Turn Off Swap Files ==============
+set noswapfile
+set nobackup
+set nowb
+
+autocmd QuickfixCmdPost vimgrep copen
+autocmd QuickfixCmdPost grep copen
+
+" grep の書式を挿入
+nnoremap <expr> <Space>g ':vimgrep /\<' . expand('<cword>') . '\>/j **/*.' . expand('%:e')
+nnoremap <expr> <Space>G ':sil grep! ' . expand('<cword>') . ' *'
+
+" The Silver Searcher
+if executable('ag')
+  " Use ag over grep
+  set grepprg=ag\ --nogroup\ --nocolor
+
+  " Use ag in CtrlP for listing files. Lightning fast and respects .gitignore
+  let g:ctrlp_user_command = 'ag %s -l --nocolor -g ""'
+
+  " ag is fast enough that CtrlP doesn't need to cache
+  let g:ctrlp_use_caching = 0
+endif
+
+" bind K to grep word under cursor
+nnoremap K :grep! "\b<C-R><C-W>\b"<CR>:cw<CR>
+
+" bind \ (backward slash) to grep shortcut
+command -nargs=+ -complete=file -bar Ag silent! grep! <args>|cwindow|redraw!
+
+nnoremap ,g :Ag<SPACE> :cw<CR>
+
+"削除キーでヤンクさせない"
+nnoremap x "_x
+"nnoremap d "_d
+nnoremap D "_D
+
+"vimタイトルの非表示化"
+set notitle
 
 "-------------------------------------------------------------------------------
 " Color
@@ -77,71 +119,58 @@ endif
 set list
 set listchars=tab:>.,trail:_,eol:↲,extends:>,precedes:<,nbsp:%
 
-"-------------------------------------------------------------------------------
-" neocomplcache
-"-------------------------------------------------------------------------------
-imap <C-k> <Plug>(neocomplcache_snippets_expand)
-smap <C-k> <Plug>(neocomplcache_snippets_expand)
+"　補完系の設定
+autocmd FileType php,ctp :set dictionary=~/.vim/dict/php.dict
+autocmd FileType html,js :set dictionary=~/.vim/dict/jquery.dict
 
-"-------------------------------------------------------------------------------
-" Unite
-"-------------------------------------------------------------------------------
-noremap <C-b><C-f> <C-u>:Unite<Space>file_mru<CR>
-noremap <C-b><C-b> <Esc>:UniteWithBufferDir -buffer-name=files file<CR>
+autocmd FileType javascript set omnifunc=tern#Complete
 
+"rsenseのインストールフォルダがデフォルトと異なるので設定
+let g:rsenseHome = expand("/usr/local/bin/rsense")
+let g:rsenseUseOmniFunc = 1
+
+set completeopt-=preview
 "-------------------------------------------------------------------------------
 " dein.vim
 "-------------------------------------------------------------------------------
 if &compatible
   set nocompatible
 endif
-set runtimepath+=~/.vim/dein/repos/github.com/Shougo/dein.vim
+set runtimepath+=~/.vim/dein.vim/repos/github.com/Shougo/dein.vim
 
-call dein#begin(expand('~/.vim/dein.vim'))
+let s:dein_dir = expand('~/.vim/dein.vim')
+let s:toml_dir = expand('~/.config/nvim')
 
-call dein#add('Shougo/dein.vim')
+"dein プラグインインストール
+if dein#load_state(s:dein_dir)
+    call dein#begin(s:dein_dir)
 
-call dein#add('Shougo/vimshell')
-call dein#add('Shougo/neocomplete')
-call dein#add('Shougo/neomru.vim')
-call dein#add('Shougo/neosnippet')
-call dein#add('Shougo/neosnippet-snippets')
-call dein#add('Shougo/vimfiler')
-call dein#add('Lokaltog/vim-powerline')
-call dein#add('vim-ruby/vim-ruby')
-call dein#add('tpope/vim-rails')
-call dein#add('tpope/vim-surround')
-call dein#add('mattn/emmet-vim')
-call dein#add('mattn/gist-vim')
-call dein#add('mattn/webapi-vim')
-call dein#add('h1mesuke/unite-outline')
-call dein#add('Shougo/vinarise')
-call dein#add('ujihisa/unite-colorscheme')
-call dein#add('zhaocai/unite-scriptnames')
-call dein#add('Align')
-call dein#add('thinca/vim-quickrun')
-call dein#add('koron/chalice')
-call dein#add('violetyk/neocomplete-php.vim')
-call dein#add('Shougo/unite.vim')
-call dein#add('scrooloose/syntastic')        "文法チェック"
-call dein#add('scrooloose/nerdtree') "サイドバーの設定"
-call dein#add('Xuyuanp/nerdtree-git-plugin') "サイドバーの設定git"
-call dein#add('jistr/vim-nerdtree-tabs') "サイドバーの設定git"
-call dein#add('ConradIrwin/vim-bracketed-paste')
+   "Load TOML
+    let s:toml = s:toml_dir . '/dein.toml'
+    let s:lazy_toml = s:toml_dir . '/dein_lazy.toml'
 
-autocmd StdinReadPre * let s:std_in=1
-autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+    call dein#load_toml(s:toml, {'lazy': 0})
+    call dein#load_toml(s:lazy_toml, {'lazy': 1})
 
-call dein#end()
+   "finalize
+    call dein#end()
+    call dein#save_state()
+endif
+
 "Syntax Check ---------------------------------------
+"jsのシンタックスチェック
 let g:syntastic_always_populate_loc_list = 1
 let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 1
+let g:syntastic_check_on_open = 0
 let g:syntastic_check_on_wq = 0
 let g:syntastic_loc_list_height = 5
-let g:syntastic_javascript_checkers = ['jshint']
+let g:syntastic_javascript_checkers = ['eslint']
 let g:syntastic_enable_balloons = 1
 
+"rubyのシンタックスチェック
+let g:syntastic_ruby_checkers = ['rubocop']
+
+"phpのシンタックスチェック
 let php_sql_query = 1
 let php_baselib = 1
 let php_htmlInStrings = 1
@@ -154,10 +183,43 @@ au BufRead,BufNewFile *.php set errorformat=%m\ in\ %f\ on\ line\ %l
 autocmd FileType php map <c-c><c-c> :make<cr> :cw<cr><cr>
 "----------------------------------------------------
 
-
-nnoremap <C-n> :NERDTreeToggle<CR>
-let NERDTreeQuitOnOpen=0
-
-set clipboard=unnamed,autoselect
+nnoremap ; :NERDTreeToggle<CR>
 
 filetype plugin indent on
+
+"検索ハイライトの設定
+nnoremap <ESC><ESC> :nohl<CR>
+
+set mouse=a
+set clipboard+=unnamed
+set clipboard+=autoselect
+
+let g:ctrlp_user_command = 'ag %s -l'
+
+" syntasticキーバインド
+nnoremap se :SyntasticCheck<CR>
+nnoremap sl :lclose<CR>
+
+" コピー設定
+function! CopyMatches(reg)
+  let hits = []
+  %s//\=len(add(hits, submatch(0))) ? submatch(0) : ''/gne
+  let reg = empty(a:reg) ? '+' : a:reg
+  execute 'let @'.reg.' = join(hits, "\n") . "\n"'
+endfunction
+command! -register CopyMatches call CopyMatches(<q-reg>)
+
+" vim立ち上げたときに、自動的にvim-indent-guidesをオンにする
+let g:indent_guides_enable_on_vim_startup=1
+" ガイドをスタートするインデントの量
+let g:indent_guides_start_level=2
+" 自動カラーを無効にする
+let g:indent_guides_auto_colors=0
+" 奇数インデントのカラー
+autocmd VimEnter,Colorscheme * :hi IndentGuidesOdd  guibg=#262626 ctermbg=gray
+" 偶数インデントのカラー
+autocmd VimEnter,Colorscheme * :hi IndentGuidesEven guibg=#3c3c3c ctermbg=darkgray
+" ハイライト色の変化の幅
+let g:indent_guides_color_change_percent = 30
+" ガイドの幅
+let g:indent_guides_guide_size = 1
