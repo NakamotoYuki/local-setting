@@ -1,0 +1,21 @@
+# jsの時のみ読み込む
+[[plugins]]
+repo  = 'ternjs/tern_for_vim'
+on_ft = ['javascript']
+
+[[plugins]]
+repo  = 'pmsorhaindo/syntastic-local-eslint.vim'
+on_ft = ['javascript']
+
+#  rubyの時のみ読み込む
+[[plugins]]
+repo  = 'vim-ruby/vim-ruby'
+on_ft = ['ruby']
+
+[[plugins]]
+repo  = 'tpope/vim-rails'
+on_ft = ['ruby']
+
+[[plugins]]
+repo  = 'tpope/vim-endwise'
+on_ft = ['ruby']
